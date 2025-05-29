@@ -123,24 +123,6 @@ flask run
 
 ---
 
-## 📦 Deployment
-
-* Deployable with **Gunicorn** or **Docker**
-* Plans for cloud deployment (AWS/GCP/Azure) in production environments
-* Ensure **HTTPS** and healthcare compliance standards (e.g., HIPAA, GDPR)
-
----
-
-## 🔮 Future Improvements
-
-* Native mobile app (offline support)
-* Full EMR system integration
-* Multilingual expansion
-* Clinical validation trials
-* AI-based dosage recommendation engine
-
----
-
 ## 👥 Contributors
 
 * **To Ba Son** – Workflow Design, VAIPE Integration
