@@ -1,5 +1,5 @@
 
-# 📱 Mobile App for Detecting Drug-Drug Interactions via Prescription Scans
+# 📱 Mobile Web-App for Detecting Drug-Drug Interactions via Prescription Scans
 
 This is an AI-powered mobile web application designed to **automatically detect potential drug-drug interactions (DDIs)** by analyzing scanned prescriptions. It aims to enhance **patient safety**, **streamline clinical workflows**, and **support doctors, pharmacists, and patients** with intelligent medication validation.
 
