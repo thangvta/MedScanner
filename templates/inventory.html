@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Management - MedScanner{% endblock %}
+
+{% block page_id %}inventory{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-boxes me-2"></i>Medication Inventory Management
+                </h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    Track and manage medication inventory to ensure adequate supplies and reduce medication waste.
+                </p>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">Current Inventory</h4>
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#add-medication-modal">
+                                    <i class="fas fa-plus me-1"></i>Add New Medication
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Medication</th>
+                                                <th>Form</th>
+                                                <th>Strength</th>
+                                                <th>Current Stock</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for medication in medications %}
+                                            <tr {% if medication.stock_quantity < medication.minimum_stock_level %}class="low-stock-item"{% endif %}>
+                                                <td>{{ medication.name }}</td>
+                                                <td>{{ medication.dosage_form }}</td>
+                                                <td>{{ medication.strength }}</td>
+                                                <td>
+                                                    <span class="fw-bold stock-level {% if medication.stock_quantity < medication.minimum_stock_level %}low-stock{% else %}stock-ok{% endif %}">
+                                                        {{ medication.stock_quantity }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {% if medication.stock_quantity < medication.minimum_stock_level %}
+                                                    <span class="badge bg-danger">Low Stock</span>
+                                                    {% else %}
+                                                    <span class="badge bg-success">In Stock</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#inventory-adjustment-modal"
+                                                            data-medication-id="{{ medication.id }}"
+                                                            data-medication-name="{{ medication.name }}">
+                                                        <i class="fas fa-edit me-1"></i>Adjust
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-danger text-white">
+                                        <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Low Stock Alert</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-group list-group-flush">
+                                            {% set low_stock_count = 0 %}
+                                            {% for med in medications if med.stock_quantity < med.minimum_stock_level %}
+                                            {% set low_stock_count = low_stock_count + 1 %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                {{ med.name }} {{ med.strength }}
+                                                <span class="badge bg-danger rounded-pill">{{ med.stock_quantity }} left</span>
+                                            </li>
+                                            {% endfor %}
+                                            
+                                            {% if low_stock_count == 0 %}
+                                            <li class="list-group-item text-success">
+                                                <i class="fas fa-check-circle me-2"></i>All medications adequately stocked
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Inventory Statistics</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Total Medications
+                                                <span class="badge bg-primary rounded-pill">{{ medications|length }}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Low Stock Items
+                                                <span class="badge bg-danger rounded-pill">{{ medications|selectattr('stock_quantity', 'lt', medications.0.minimum_stock_level)|list|length }}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Well Stocked Items
+                                                <span class="badge bg-success rounded-pill">{{ medications|selectattr('stock_quantity', 'ge', medications.0.minimum_stock_level)|list|length }}</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h4 class="mb-0">Recent Inventory Changes</h4>
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush">
+                                    {% for log in logs %}
+                                    <li class="list-group-item">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>{{ log.medication.name }}</strong>
+                                            <small class="text-muted">{{ log.timestamp.strftime('%m/%d/%Y %H:%M') }}</small>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-1">
+                                            <span>
+                                                {% if log.quantity_change > 0 %}
+                                                <span class="text-success">+{{ log.quantity_change }}</span>
+                                                {% else %}
+                                                <span class="text-danger">{{ log.quantity_change }}</span>
+                                                {% endif %}
+                                                units
+                                            </span>
+                                            <small>{{ log.reason }}</small>
+                                        </div>
+                                        {% if log.recorded_by %}
+                                        <small class="text-muted">By: {{ log.recorded_by.username }}</small>
+                                        {% endif %}
+                                    </li>
+                                    {% endfor %}
+                                    
+                                    {% if not logs %}
+                                    <li class="list-group-item text-center text-muted">
+                                        No recent inventory changes
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <img src="https://pixabay.com/get/ga62a820691699f74655358f3e875fce1ea91f095b78d177812ce2285e194aab96f811cf84ced74e1f6bede34ed304d8d6fe81b9d005a6848a551d62fe47ed018_1280.jpg" class="card-img-top" alt="Medication inventory">
+                            <div class="card-body">
+                                <h5 class="card-title">Inventory Management Tips</h5>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Check expiry dates regularly</li>
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Store medications properly</li>
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Maintain minimum stock levels</li>
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Record all inventory changes</li>
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Monitor usage patterns</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Adjustment Modal -->
+<div class="modal fade" id="inventory-adjustment-modal" tabindex="-1" aria-labelledby="adjustmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adjustmentModalLabel">Adjust Inventory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('update_inventory_route') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="medication_id" name="medication_id">
+                    
+                    <div class="mb-3">
+                        <label for="quantity_change" class="form-label">Quantity Change</label>
+                        <div class="input-group">
+                            <button class="btn btn-outline-secondary" type="button" id="decrease-btn">-</button>
+                            <input type="number" class="form-control text-center" id="quantity_change" name="quantity_change" value="0" required>
+                            <button class="btn btn-outline-secondary" type="button" id="increase-btn">+</button>
+                        </div>
+                        <div class="form-text">
+                            Enter positive values to add stock, negative to remove stock.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for Change</label>
+                        <select class="form-select" id="reason" name="reason" required>
+                            <option value="" selected disabled>Select reason</option>
+                            <option value="Prescription filled">Prescription filled</option>
+                            <option value="New stock received">New stock received</option>
+                            <option value="Stock adjustment">Stock adjustment</option>
+                            <option value="Expired medication">Expired medication</option>
+                            <option value="Damaged inventory">Damaged inventory</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Medication Modal -->
+<div class="modal fade" id="add-medication-modal" tabindex="-1" aria-labelledby="addMedicationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMedicationModalLabel">Add New Medication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>This feature is not yet implemented. Please contact the system administrator to add new medications.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle the increase/decrease buttons for quantity
+    const decreaseBtn = document.getElementById('decrease-btn');
+    const increaseBtn = document.getElementById('increase-btn');
+    const quantityInput = document.getElementById('quantity_change');
+    
+    if (decreaseBtn && increaseBtn && quantityInput) {
+        decreaseBtn.addEventListener('click', function() {
+            quantityInput.value = parseInt(quantityInput.value || 0) - 1;
+        });
+        
+        increaseBtn.addEventListener('click', function() {
+            quantityInput.value = parseInt(quantityInput.value || 0) + 1;
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% endblock %}

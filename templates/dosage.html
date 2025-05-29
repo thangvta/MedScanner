@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Dosage Verification - MedScanner{% endblock %}
+
+{% block page_id %}dosage{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-prescription me-2"></i>Dosage Verification
+                </h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    Verify if medication dosages are appropriate based on patient parameters and medication guidelines.
+                </p>
+                
+                <div id="dosage-alert-container"></div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h4 class="mb-0">Verify Medication Dosage</h4>
+                            </div>
+                            <div class="card-body">
+                                <form id="dosage-verification-form" action="{{ url_for('verify_dosage_route') }}" method="post">
+                                    <div class="mb-3">
+                                        <label for="medication_id" class="form-label">Medication</label>
+                                        <select class="form-select" id="medication_id" name="medication_id" required>
+                                            <option value="" selected disabled>Select medication</option>
+                                            {% for medication in medications %}
+                                            <option value="{{ medication.id }}">{{ medication.name }} {{ medication.strength }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="dosage" class="form-label">Prescribed Dosage</label>
+                                        <input type="text" class="form-control" id="dosage" name="dosage" 
+                                               placeholder="e.g., 10mg, 1 tablet, 5ml" required>
+                                        <div class="form-text">Specify both quantity and unit (mg, ml, tablets, etc.)</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="patient_weight" class="form-label">Patient Weight (kg) <span class="text-muted">(optional)</span></label>
+                                        <input type="number" step="0.1" min="0.1" class="form-control" id="patient_weight" name="patient_weight" 
+                                               placeholder="Weight in kilograms">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="patient_age" class="form-label">Patient Age <span class="text-muted">(optional)</span></label>
+                                        <input type="number" step="1" min="0" class="form-control" id="patient_age" name="patient_age" 
+                                               placeholder="Age in years">
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-check-circle me-2"></i>Verify Dosage
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div id="dosage-results">
+                            <!-- Results will be displayed here -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>Fill out the form to verify a medication dosage. Results will appear here.
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h4 class="mb-0">Dosage Guidelines</h4>
+                            </div>
+                            <div class="card-body">
+                                <h5>Patient Factors to Consider</h5>
+                                <ul>
+                                    <li><strong>Weight:</strong> Many medications dose by weight (mg/kg)</li>
+                                    <li><strong>Age:</strong> Pediatric and geriatric patients often need adjusted dosages</li>
+                                    <li><strong>Renal Function:</strong> Kidney problems may require lower doses</li>
+                                    <li><strong>Hepatic Function:</strong> Liver issues may affect medication metabolism</li>
+                                    <li><strong>Pregnancy/Lactation:</strong> Special considerations required</li>
+                                    <li><strong>Drug Interactions:</strong> May require dosage adjustments</li>
+                                </ul>
+                                
+                                <hr>
+                                
+                                <h5>Common Medications</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Medication</th>
+                                                <th>Adult Dosage</th>
+                                                <th>Pediatric Dosage</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Acetaminophen</td>
+                                                <td>325-650mg every 4-6 hours</td>
+                                                <td>10-15 mg/kg every 4-6 hours</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Ibuprofen</td>
+                                                <td>200-400mg every 4-6 hours</td>
+                                                <td>5-10 mg/kg every 6-8 hours</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Amoxicillin</td>
+                                                <td>250-500mg every 8 hours</td>
+                                                <td>20-90 mg/kg/day divided</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>About Dosage Verification</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-7">
+                        <h5>Why Verify Dosages?</h5>
+                        <p>Incorrect medication dosages can lead to treatment failure, adverse effects, or even toxicity. Our system checks prescribed dosages against established guidelines and patient-specific factors to ensure safety.</p>
+                        
+                        <h5>Dosage Verification Considers:</h5>
+                        <ul>
+                            <li>Standard dosing guidelines for each medication</li>
+                            <li>Patient-specific factors (age, weight, etc.)</li>
+                            <li>Potential dose adjustments for organ impairment</li>
+                            <li>Special populations considerations (pediatric, geriatric, pregnancy)</li>
+                        </ul>
+                        
+                        <div class="alert alert-warning">
+                            <strong>Note:</strong> This tool is meant to assist healthcare professionals but does not replace clinical judgment. Always consult official prescribing information.
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <img src="https://pixabay.com/get/g901d45c85b68e0d48a5166ed8094b0c0dbe3792cb116447a1b54678bfb97c2a80948035b008ee0ee2da304d2b14585110d18c7ad2064f012eb3e6bf58996a2c5_1280.jpg" class="img-fluid rounded" alt="Prescription pad">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

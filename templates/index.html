@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}MedScanner - Drug Interaction Detection{% endblock %}
+
+{% block page_id %}home{% endblock %}
+
+{% block content %}
+<div class="row align-items-center py-5">
+    <div class="col-lg-6 mb-4 mb-lg-0">
+        <h1 class="display-4 fw-bold mb-3">Detect Drug Interactions with AI</h1>
+        <p class="lead mb-4">
+            MedScanner is a revolutionary mobile application that uses artificial intelligence to detect potential drug-drug interactions by scanning prescriptions, ensuring safer medication management for patients, doctors, and pharmacists.
+        </p>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                    <i class="fas fa-chart-line me-2"></i>Go to Dashboard
+                </a>
+                <a href="{{ url_for('scan_page') }}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-camera me-2"></i>Scan Prescription
+                </a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                    <i class="fas fa-sign-in-alt me-2"></i>Log In
+                </a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-lg px-4 me-md-2">
+                    <i class="fas fa-user-plus me-2"></i>Register
+                </a>
+                <a href="{{ url_for('public_interactions') }}" class="btn btn-outline-info btn-lg px-4">
+                    <i class="fas fa-pills me-2"></i>Check Drug Interactions
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-lg">
+            <img src="https://pixabay.com/get/g4549550c76f16353c4df13d54a5e506b3dc2aff43e347439b5d02a56d83da9a566b413b70ff4e838d8b244f2248a6c83387cc7d68d3ac660ca7e9825eb3d5b08_1280.jpg" class="card-img-top" alt="Medication pills and bottles">
+            <div class="card-body text-center">
+                <h5 class="card-title">Prescription Safety at Your Fingertips</h5>
+                <p class="card-text">Reduce medication errors and improve patient safety.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="my-5">
+
+<section class="py-4">
+    <h2 class="text-center mb-4">How It Works</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-camera fa-3x text-primary mb-3"></i>
+                    <h3 class="card-title h5">1. Scan Prescription</h3>
+                    <p class="card-text">Capture your prescription using your smartphone camera. Our AI system automatically extracts medication information.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                    <h3 class="card-title h5">2. Analyze Interactions</h3>
+                    <p class="card-text">MedScanner cross-references medications with a comprehensive drug database to identify potential interactions.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-3x text-primary mb-3"></i>
+                    <h3 class="card-title h5">3. Get Alerts</h3>
+                    <p class="card-text">Receive immediate notifications about potential drug interactions, inappropriate dosages, or allergies.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-light mt-5 rounded">
+    <div class="container">
+        <h2 class="text-center mb-4">Features for Different Users</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-user me-2"></i>For Patients
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">Scan and store prescriptions</li>
+                            <li class="list-group-item">Check for drug interactions</li>
+                            <li class="list-group-item">Record allergies and medical history</li>
+                            <li class="list-group-item">Receive medication alerts</li>
+                            <li class="list-group-item">Track medication history</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-user-md me-2"></i>For Doctors
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">Verify prescription safety</li>
+                            <li class="list-group-item">Check drug interactions</li>
+                            <li class="list-group-item">Verify appropriate dosages</li>
+                            <li class="list-group-item">Access patient medication history</li>
+                            <li class="list-group-item">Generate medication reports</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-info">
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-mortar-pestle me-2"></i>For Pharmacists
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">Verify prescription authenticity</li>
+                            <li class="list-group-item">Check for contraindications</li>
+                            <li class="list-group-item">Manage medication inventory</li>
+                            <li class="list-group-item">Track dispensed medications</li>
+                            <li class="list-group-item">Generate interaction reports</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="row align-items-center">
+        <div class="col-md-6 mb-4 mb-md-0">
+            <img src="https://pixabay.com/get/gbf2917109eb3bb65646f75473a45a92a43ab6d37bc289edef10dafcfc52612024d12fbfc568e3a55c086cc606080329213e9a891104e888fc761690b0825e4b2_1280.jpg" class="img-fluid rounded shadow" alt="Healthcare professional reviewing a prescription">
+        </div>
+        <div class="col-md-6">
+            <h2>Why Choose MedScanner?</h2>
+            <ul class="list-group list-group-flush mt-3">
+                <li class="list-group-item bg-transparent">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <strong>Comprehensive Database</strong>: Access information on thousands of medications and interactions
+                </li>
+                <li class="list-group-item bg-transparent">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <strong>Role-Based Access</strong>: Tailored features for patients, doctors, and pharmacists
+                </li>
+                <li class="list-group-item bg-transparent">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <strong>Easy to Use</strong>: Simple, intuitive interface designed for mobile devices
+                </li>
+                <li class="list-group-item bg-transparent">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <strong>Privacy Focused</strong>: Secure handling of all medical information
+                </li>
+                <li class="list-group-item bg-transparent">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    <strong>Real-time Alerts</strong>: Immediate notifications for potential problems
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 text-center">
+    <h2 class="mb-4">Start Using MedScanner Today</h2>
+    <p class="lead mb-4">Join thousands of users who trust MedScanner for safer medication management</p>
+    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                <i class="fas fa-chart-line me-2"></i>Go to Dashboard
+            </a>
+        {% else %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-2">
+                <i class="fas fa-user-plus me-2"></i>Create Account
+            </a>
+            <a href="{{ url_for('public_interactions') }}" class="btn btn-info btn-lg px-4">
+                <i class="fas fa-pills me-2"></i>Check Drug Interactions
+            </a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

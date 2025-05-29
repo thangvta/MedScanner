@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Prescription - MedScanner{% endblock %}
+
+{% block page_id %}scan{% endblock %}
+
+{% block extra_css %}
+<style>
+    #camera-feed {
+        width: 100%;
+        max-height: 50vh;
+        object-fit: cover;
+        border-radius: 0.25rem;
+    }
+    
+    #scan-preview {
+        max-width: 100%;
+        border-radius: 0.25rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    #scan-result {
+        background-color: rgba(0, 0, 0, 0.03);
+        border-radius: 0.25rem;
+        padding: 1rem;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .scan-options {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .scan-step {
+        border-left: 3px solid var(--bs-info);
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .ai-badge {
+        background-color: #6f42c1;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0"><i class="fas fa-camera me-2"></i>Prescription Scanner</h3>
+                <span class="ai-badge"><i class="fas fa-robot me-1"></i>AI-Powered</span>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Capture your prescription image using your device's camera. Our AI vision system will automatically analyze it to detect medications, dosages, and instructions.
+                </p>
+                
+                <div id="alert-container"></div>
+                
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <!-- Camera selection -->
+                        <div class="mb-3">
+                            <label for="camera-select" class="form-label"><i class="fas fa-video me-1"></i>Select Camera</label>
+                            <select class="form-select" id="camera-select">
+                                <option value="" selected disabled>Choose a camera</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Start Camera Button -->
+                        <div class="d-grid mb-3">
+                            <button id="scan-button" class="btn btn-primary btn-lg">
+                                <i class="fas fa-camera me-2"></i>Start Camera
+                            </button>
+                        </div>
+                        
+                        <!-- Camera Feed -->
+                        <div id="camera-container" class="d-none mb-3">
+                            <div class="ratio ratio-4x3 mb-2 border rounded">
+                                <video id="camera-feed" autoplay playsinline></video>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button id="capture-button" class="btn btn-success btn-lg d-none">
+                                    <i class="fas fa-camera me-2"></i>Capture Prescription
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Scan Preview -->
+                <div class="mb-3">
+                    <div class="text-center">
+                        <img id="scan-preview" src="" class="d-none mb-3 img-fluid">
+                    </div>
+                    
+                    <div id="loading-indicator" class="text-center d-none my-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">AI is analyzing your prescription...</p>
+                        <small class="text-muted">This may take a few seconds</small>
+                    </div>
+                </div>
+                
+                <!-- Analysis Results -->
+                <div class="row g-4">
+                    <!-- Extracted Text -->
+                    <div class="col-12">
+                        <div class="card border-light mb-4 d-none" id="text-extraction-card">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>AI Analysis Results</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#extractedTextCollapse">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="collapse" id="extractedTextCollapse">
+                                <div class="card-body">
+                                    <pre id="scan-result" class="d-none mb-0"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Medication List -->
+                    <div class="col-12">
+                        <div id="medication-list" class="d-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>How to Use AI Prescription Scanning</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="scan-step">
+                            <h5>1. Prepare</h5>
+                            <p>Place the prescription on a flat, well-lit surface with clear text visibility.</p>
+                        </div>
+                        <div class="scan-step">
+                            <h5>2. Scan</h5>
+                            <p>Click "Start Camera" and position your device to frame the entire prescription.</p>
+                        </div>
+                        <div class="scan-step">
+                            <h5>3. Analyze</h5>
+                            <p>Tap "Capture Prescription" to let the AI analyze the image and extract medication information.</p>
+                        </div>
+                        <div class="scan-step">
+                            <h5>4. Verify</h5>
+                            <p>Review the detected medications and add any missing details before saving.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <img src="https://pixabay.com/get/g68bf72935ef74751d3077021c8f3eea48d7c1c0e943092e50e68475f8054e66bfbf94a9d0cdc2220dfeb7981d193873afebc423bb0b7f2cd261798316902c06d_1280.jpg" class="img-fluid rounded" alt="Prescription sample">
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-shield-alt me-2"></i>Your privacy is protected. All images are processed securely and not stored permanently.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/scan.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the scanner
+    initScanner();
+    
+    // When text is extracted, show the heading
+    const scanResult = document.getElementById('scan-result');
+    const textExtractionCard = document.getElementById('text-extraction-card');
+    
+    const observer = new MutationObserver(function(mutations) {
+        if (scanResult && !scanResult.classList.contains('d-none')) {
+            textExtractionCard.classList.remove('d-none');
+        }
+    });
+    
+    if (scanResult) {
+        observer.observe(scanResult, { attributes: true });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Login - MedScanner{% endblock %}
+
+{% block page_id %}login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="fas fa-pills fa-3x text-primary"></i>
+                    <h1 class="h3 mt-2">Login to MedScanner</h1>
+                    <p class="text-muted">Enter your credentials to access your account</p>
+                </div>
+                
+                <form method="post" action="{{ url_for('login') }}" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   placeholder="Enter your username" required autofocus>
+                            <div class="invalid-feedback">
+                                Please enter your username.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Enter your password" required>
+                            <div class="invalid-feedback">
+                                Please enter your password.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Log In
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card-footer bg-light text-center py-3">
+                <p class="mb-0">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-info-circle me-2"></i>Demo Accounts
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">For demonstration purposes, you can register a new account with any of these roles:</p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item bg-transparent">
+                            <i class="fas fa-user me-2 text-primary"></i><strong>Patient:</strong> Access your prescriptions and check interactions
+                        </li>
+                        <li class="list-group-item bg-transparent">
+                            <i class="fas fa-user-md me-2 text-success"></i><strong>Doctor:</strong> Create prescriptions and verify dosages
+                        </li>
+                        <li class="list-group-item bg-transparent">
+                            <i class="fas fa-mortar-pestle me-2 text-info"></i><strong>Pharmacist:</strong> Manage inventory and verify prescriptions
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-7 d-none d-md-block">
+        <img src="https://pixabay.com/get/g08f73806be8b522bb72a184ab04cfe88ae5377a7400a3ac6e910a63295d3a7975dd0195f24faa48e541fc01c3ce62f945e3bc1956e74b4099ce1ae4b07951edd_1280.jpg" class="img-fluid rounded shadow" alt="Medication and healthcare">
+        <div class="card mt-4 shadow-sm">
+            <div class="card-body">
+                <h4 class="card-title">Why Use MedScanner?</h4>
+                <p class="card-text">MedScanner helps you detect potential drug interactions and ensures the safety of your medications. Our AI-powered system reads prescriptions and cross-checks with a comprehensive drug database.</p>
+                <div class="row mt-4">
+                    <div class="col-6">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-shield-alt fa-2x text-primary me-3"></i>
+                            <div>
+                                <h5 class="mb-0 h6">Enhanced Safety</h5>
+                                <small class="text-muted">Prevent adverse reactions</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-mobile-alt fa-2x text-primary me-3"></i>
+                            <div>
+                                <h5 class="mb-0 h6">Mobile-Friendly</h5>
+                                <small class="text-muted">Use anywhere, anytime</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

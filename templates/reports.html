@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Interaction Reports - MedScanner{% endblock %}
+
+{% block page_id %}reports{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>Interaction Reports
+                </h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    View and analyze medication interaction reports to ensure safe medication use.
+                </p>
+                
+                {% if report is defined %}
+                <!-- Single Report View -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Report #{{ report.id }}</h4>
+                        <span class="text-muted">{{ report.created_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <p><strong>Prescription:</strong> #{{ prescription.id }}</p>
+                                <p><strong>Patient:</strong> {{ prescription.patient.full_name }}</p>
+                                {% if prescription.doctor %}
+                                <p><strong>Doctor:</strong> {{ prescription.doctor.full_name }}</p>
+                                {% endif %}
+                                <p><strong>Status:</strong> 
+                                    <span class="badge {% if report.has_interactions or report.has_dosage_issues %}bg-warning{% else %}bg-success{% endif %}">
+                                        {% if report.has_interactions or report.has_dosage_issues %}Issues Detected{% else %}No Issues{% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Summary</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>{{ report.summary }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if report.details %}
+                        <h5 class="mb-3">Detailed Findings</h5>
+                        <div class="list-group mb-4">
+                            {% for detail in report.details %}
+                            <div class="list-group-item list-group-item-action interaction-{{ detail.severity }}"
+                                 data-type="{{ detail.interaction_type }}" 
+                                 data-severity="{{ detail.severity }}">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h5 class="mb-1">
+                                        {% if detail.interaction_type == 'drug-drug' %}
+                                        <i class="fas fa-pills me-2"></i>Drug Interaction
+                                        {% elif detail.interaction_type == 'dosage' %}
+                                        <i class="fas fa-prescription me-2"></i>Dosage Issue
+                                        {% elif detail.interaction_type == 'allergy' %}
+                                        <i class="fas fa-allergies me-2"></i>Allergy Alert
+                                        {% endif %}
+                                    </h5>
+                                    <span class="severity-indicator severity-{{ detail.severity }}">{{ detail.severity }}</span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    {% if detail.interaction_type == 'drug-drug' %}
+                                    <div class="d-flex align-items-center my-2">
+                                        <span class="badge bg-primary me-2">{{ detail.drug1.name }}</span>
+                                        <i class="fas fa-plus mx-2"></i>
+                                        <span class="badge bg-primary">{{ detail.drug2.name }}</span>
+                                    </div>
+                                    {% elif detail.interaction_type == 'dosage' or detail.interaction_type == 'allergy' %}
+                                    <div class="my-2">
+                                        <span class="badge bg-primary">{{ detail.drug1.name }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <p class="mb-1"><strong>Issue:</strong> {{ detail.description }}</p>
+                                
+                                {% if detail.recommendation %}
+                                <p class="mb-0 text-info">
+                                    <strong>Recommendation:</strong> {{ detail.recommendation }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>No issues detected in this prescription.
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_prescription', prescription_id=prescription.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-prescription me-2"></i>View Prescription
+                            </a>
+                            
+                            <a href="{{ url_for('reports') }}" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                {% elif reports is defined %}
+                <!-- Reports List View -->
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4 class="mb-0">Filter Reports</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="report-filter-form" class="row g-3">
+                            <div class="col-md-3">
+                                <label for="filter-from-date" class="form-label">From Date</label>
+                                <input type="date" class="form-control" id="filter-from-date">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="filter-to-date" class="form-label">To Date</label>
+                                <input type="date" class="form-control" id="filter-to-date">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="filter-severity" class="form-label">Severity</label>
+                                <select class="form-select" id="filter-severity">
+                                    <option value="all" selected>All</option>
+                                    <option value="severe">Severe</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="mild">Mild</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="filter-type" class="form-label">Issue Type</label>
+                                <select class="form-select" id="filter-type">
+                                    <option value="all" selected>All</option>
+                                    <option value="drug-drug">Drug Interaction</option>
+                                    <option value="dosage">Dosage Issue</option>
+                                    <option value="allergy">Allergy</option>
+                                </select>
+                            </div>
+                            <div class="col-12 d-flex justify-content-end">
+                                <button type="button" id="filter-reset" class="btn btn-secondary me-2">Reset</button>
+                                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Patient</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Summary</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr class="report-item" 
+                                data-date="{{ report.created_at.strftime('%Y-%m-%d') }}" 
+                                data-severity="{{ 'severe' if report.has_interactions else 'none' }}" 
+                                data-type="all">
+                                <td>#{{ report.id }}</td>
+                                <td>{{ report.prescription.patient.full_name }}</td>
+                                <td>{{ report.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if report.has_interactions %}
+                                    <span class="badge bg-warning">Issues Found</span>
+                                    {% else %}
+                                    <span class="badge bg-success">No Issues</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ report.summary }}</td>
+                                <td>
+                                    <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            {% if not reports %}
+                            <tr>
+                                <td colspan="6" class="text-center">No reports found</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>About Interaction Reports</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Understanding Interaction Reports</h5>
+                        <p>
+                            MedScanner's interaction reports provide detailed analysis of potential medication issues, including:
+                        </p>
+                        <ul>
+                            <li><strong>Drug-Drug Interactions:</strong> Identifies when two or more medications may interact in a way that affects efficacy or safety.</li>
+                            <li><strong>Dosage Issues:</strong> Flags when a medication's dosage may be inappropriate based on patient parameters.</li>
+                            <li><strong>Allergy Alerts:</strong> Warns when a prescribed medication contains substances the patient is allergic to.</li>
+                        </ul>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> While our system identifies potential issues, always consult with a healthcare professional before making any medication changes.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <img src="https://pixabay.com/get/g2c2484773cd35df123c8222d8d5541a68825d45a53be045cabff4ef31e2743b4c57fffc4985d74c4cd254e3e5b7cd289e866be67df4a15586fa2971f68012d18_1280.jpg" class="img-fluid rounded mb-3" alt="Medical professional analyzing data">
+                        
+                        <h5>Report Severity Levels</h5>
+                        <div class="card mb-3">
+                            <div class="card-body p-2">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="severity-indicator severity-severe me-3">Severe</span>
+                                    <span>Potentially life-threatening. Immediate attention required.</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="severity-indicator severity-moderate me-3">Moderate</span>
+                                    <span>May cause significant discomfort or health issues.</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="severity-indicator severity-mild me-3">Mild</span>
+                                    <span>Minor effects that are typically manageable.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

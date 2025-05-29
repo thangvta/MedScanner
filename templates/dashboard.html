@@ -1,0 +1,584 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - MedScanner{% endblock %}
+
+{% block page_id %}dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h3 mb-4">
+                    <i class="fas fa-chart-line me-2"></i>Dashboard
+                    {% for role in current_user.roles %}
+                        <span class="badge role-badge role-{{ role.name }}">{{ role.name|capitalize }}</span>
+                    {% endfor %}
+                </h1>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-bell me-2"></i>
+                    Welcome back, <strong>{{ current_user.full_name or current_user.username }}</strong>! 
+                    {% if current_user.has_role('patient') %}
+                        Use the dashboard to monitor your medications and check for potential interactions.
+                    {% elif current_user.has_role('doctor') %}
+                        You can review patient prescriptions and verify dosages.
+                    {% elif current_user.has_role('pharmacist') %}
+                        Check prescription statuses and manage medication inventory.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dashboard Stats Cards -->
+    <div class="col-12 mb-4">
+        <div class="row g-3">
+            {% if current_user.has_role('patient') %}
+                <!-- Patient Stats -->
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-prescription-bottle-alt stat-icon text-primary"></i>
+                            <h5>Active Prescriptions</h5>
+                            <div class="stat-value">{{ prescriptions|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-exclamation-triangle stat-icon text-warning"></i>
+                            <h5>Interaction Alerts</h5>
+                            <div class="stat-value">{{ reports|selectattr('has_interactions', 'equalto', true)|list|length }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-pills stat-icon text-info"></i>
+                            <h5>Total Medications</h5>
+                            <div class="stat-value">
+                                {% set total_meds = 0 %}
+                                {% for prescription in prescriptions %}
+                                    {% set total_meds = total_meds + prescription.medications|length %}
+                                {% endfor %}
+                                {{ total_meds }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-file-medical-alt stat-icon text-success"></i>
+                            <h5>Latest Scan</h5>
+                            <div class="stat-value">
+                                {% if prescriptions and prescriptions|length > 0 %}
+                                    {{ prescriptions[0].date_prescribed.strftime('%d %b') }}
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% elif current_user.has_role('doctor') %}
+                <!-- Doctor Stats -->
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-file-prescription stat-icon text-primary"></i>
+                            <h5>Prescriptions</h5>
+                            <div class="stat-value">{{ prescriptions|length }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-injured stat-icon text-info"></i>
+                            <h5>Patients</h5>
+                            <div class="stat-value">{{ patient_count }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-exclamation-circle stat-icon text-warning"></i>
+                            <h5>Pending Reviews</h5>
+                            <div class="stat-value">
+                                {% set pending_reviews = 0 %}
+                                {% for prescription in prescriptions if prescription.status == 'pending' %}
+                                    {% set pending_reviews = pending_reviews + 1 %}
+                                {% endfor %}
+                                {{ pending_reviews }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar-day stat-icon text-success"></i>
+                            <h5>Today's Date</h5>
+                            <div class="stat-value">{{ now().strftime('%d %b') }}</div>
+                        </div>
+                    </div>
+                </div>
+            {% elif current_user.has_role('pharmacist') %}
+                <!-- Pharmacist Stats -->
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-clock stat-icon text-warning"></i>
+                            <h5>Pending Prescriptions</h5>
+                            <div class="stat-value">{{ pending_prescriptions|length }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-exclamation-triangle stat-icon text-danger"></i>
+                            <h5>Low Stock Items</h5>
+                            <div class="stat-value">{{ low_stock|length }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-pills stat-icon text-primary"></i>
+                            <h5>Total Medications</h5>
+                            <div class="stat-value">
+                                {% if medications is defined %}
+                                    {{ medications|length }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar-day stat-icon text-info"></i>
+                            <h5>Today's Date</h5>
+                            <div class="stat-value">{{ now().strftime('%d %b') }}</div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Main Dashboard Content - Changes based on role -->
+        
+        {% if current_user.has_role('patient') %}
+            <!-- Patient Dashboard -->
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Your Prescriptions</h3>
+                </div>
+                <div class="card-body">
+                    {% if prescriptions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Medications</th>
+                                        <th>Status</th>
+                                        <th>Interactions</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prescription in prescriptions %}
+                                    <tr>
+                                        <td>{{ prescription.date_prescribed.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            {% for pm in prescription.medications[:2] %}
+                                                <span class="badge bg-primary">{{ pm.medication.name }}</span>
+                                            {% endfor %}
+                                            {% if prescription.medications|length > 2 %}
+                                                <span class="badge bg-secondary">+{{ prescription.medications|length - 2 }} more</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if prescription.status == 'pending' %}bg-warning{% elif prescription.status == 'filled' %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ prescription.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% set interaction_reports = [] %}
+                                            {% for report in reports if report.prescription_id == prescription.id %}
+                                                {% set interaction_reports = interaction_reports.append(report) %}
+                                            {% endfor %}
+                                            
+                                            {% if reports|selectattr('prescription_id', 'equalto', prescription.id)|selectattr('has_interactions', 'equalto', true)|list|length > 0 %}
+                                                <span class="badge bg-danger">Detected</span>
+                                            {% else %}
+                                                <span class="badge bg-success">None</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('view_prescription', prescription_id=prescription.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>You don't have any prescriptions yet. 
+                            <a href="{{ url_for('scan_page') }}" class="alert-link">Scan a prescription</a> to get started.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Recent Interaction Reports</h3>
+                </div>
+                <div class="card-body">
+                    {% if reports %}
+                        <div class="list-group">
+                            {% for report in reports %}
+                                <a href="{{ url_for('view_report', report_id=report.id) }}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">
+                                            Report #{{ report.id }}
+                                            {% if report.has_interactions %}
+                                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            {% endif %}
+                                        </h5>
+                                        <small>{{ report.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ report.summary }}</p>
+                                    <small>
+                                        {% set prescription = namespace(medications=[]) %}
+                                        {% for pm in report.prescription.medications %}
+                                            {% set prescription.medications = prescription.medications + [pm.medication.name] %}
+                                        {% endfor %}
+                                        Medications: {{ prescription.medications|join(', ') }}
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No interaction reports found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+        {% elif current_user.has_role('doctor') %}
+            <!-- Doctor Dashboard -->
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Recent Prescriptions</h3>
+                </div>
+                <div class="card-body">
+                    {% if prescriptions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Patient</th>
+                                        <th>Medications</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prescription in prescriptions %}
+                                    <tr>
+                                        <td>{{ prescription.date_prescribed.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ prescription.patient.full_name }}</td>
+                                        <td>
+                                            {% for pm in prescription.medications[:2] %}
+                                                <span class="badge bg-primary">{{ pm.medication.name }}</span>
+                                            {% endfor %}
+                                            {% if prescription.medications|length > 2 %}
+                                                <span class="badge bg-secondary">+{{ prescription.medications|length - 2 }} more</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if prescription.status == 'pending' %}bg-warning{% elif prescription.status == 'filled' %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ prescription.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('view_prescription', prescription_id=prescription.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No prescriptions found.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('scan_page') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Prescription
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h3 class="card-title mb-0">Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('scan_page') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-camera me-2"></i>Scan Prescription
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('dosage') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-prescription me-2"></i>Verify Dosage
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('interactions') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Check Interactions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        {% elif current_user.has_role('pharmacist') %}
+            <!-- Pharmacist Dashboard -->
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Pending Prescriptions</h3>
+                </div>
+                <div class="card-body">
+                    {% if pending_prescriptions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Patient</th>
+                                        <th>Medications</th>
+                                        <th>Interactions</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prescription in pending_prescriptions %}
+                                    <tr>
+                                        <td>{{ prescription.date_prescribed.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ prescription.patient.full_name }}</td>
+                                        <td>
+                                            {% for pm in prescription.medications[:2] %}
+                                                <span class="badge bg-primary">{{ pm.medication.name }}</span>
+                                            {% endfor %}
+                                            {% if prescription.medications|length > 2 %}
+                                                <span class="badge bg-secondary">+{{ prescription.medications|length - 2 }} more</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set has_interactions = false %}
+                                            {% for report in prescription.interaction_reports if report.has_interactions %}
+                                                {% set has_interactions = true %}
+                                            {% endfor %}
+                                            
+                                            {% if has_interactions %}
+                                                <span class="badge bg-danger">Detected</span>
+                                            {% else %}
+                                                <span class="badge bg-success">None</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('view_prescription', prescription_id=prescription.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>No pending prescriptions at this time.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title mb-0">Low Stock Medications</h3>
+                </div>
+                <div class="card-body">
+                    {% if low_stock %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Medication</th>
+                                        <th>Form</th>
+                                        <th>Strength</th>
+                                        <th>Current Stock</th>
+                                        <th>Min. Level</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for medication in low_stock %}
+                                    <tr class="low-stock-item">
+                                        <td>{{ medication.name }}</td>
+                                        <td>{{ medication.dosage_form }}</td>
+                                        <td>{{ medication.strength }}</td>
+                                        <td>{{ medication.stock_quantity }}</td>
+                                        <td>{{ medication.minimum_stock_level }}</td>
+                                        <td>
+                                            <a href="{{ url_for('inventory') }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-plus me-1"></i>Restock
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>All medications are adequately stocked.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('inventory') }}" class="btn btn-primary">
+                        <i class="fas fa-boxes me-2"></i>Manage Inventory
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Sidebar Content -->
+        
+        <!-- Quick Access Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Quick Access</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('scan_page') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-camera me-2"></i>Scan Prescription
+                    </a>
+                    <a href="{{ url_for('interactions') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Check Drug Interactions
+                    </a>
+                    {% if current_user.has_role('doctor') or current_user.has_role('pharmacist') %}
+                    <a href="{{ url_for('dosage') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-prescription me-2"></i>Verify Medication Dosage
+                    </a>
+                    {% endif %}
+                    {% if current_user.has_role('pharmacist') %}
+                    <a href="{{ url_for('inventory') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-boxes me-2"></i>Manage Inventory
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('reports') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-clipboard-list me-2"></i>View Reports
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-circle me-2"></i>Update Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Information Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Your Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-user-circle fa-4x text-primary"></i>
+                </div>
+                <h5 class="card-title text-center">{{ current_user.full_name or current_user.username }}</h5>
+                <p class="card-text text-center">
+                    {% for role in current_user.roles %}
+                        <span class="badge role-badge role-{{ role.name }}">{{ role.name|capitalize }}</span>
+                    {% endfor %}
+                </p>
+                <hr>
+                <p><strong>Username:</strong> {{ current_user.username }}</p>
+                <p><strong>Email:</strong> {{ current_user.email }}</p>
+                
+                {% if current_user.has_role('patient') and current_user.date_of_birth %}
+                <hr>
+                <p><strong>Date of Birth:</strong> {{ current_user.date_of_birth.strftime('%B %d, %Y') }}</p>
+                {% if current_user.weight %}
+                <p><strong>Weight:</strong> {{ current_user.weight }} kg</p>
+                {% endif %}
+                {% if current_user.height %}
+                <p><strong>Height:</strong> {{ current_user.height }} cm</p>
+                {% endif %}
+                {% endif %}
+                
+                <div class="d-grid mt-3">
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- App Information -->
+        <div class="card shadow-sm">
+            <img src="https://pixabay.com/get/gc5a7dc581b121f6fdce586446288ccf37ff7285ad7e93a0254a2436d67b7f2ae09c8ae63d3777d88b70058b9732aafd888051a8394b325a5236596e7f3204b18_1280.jpg" class="card-img-top" alt="Medication">
+            <div class="card-body">
+                <h5 class="card-title">About MedScanner</h5>
+                <p class="card-text">
+                    MedScanner helps detect potential drug interactions by scanning prescriptions and comparing with a comprehensive medication database.
+                </p>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Version 1.0</small>
+                    <a href="#" class="btn btn-sm btn-outline-secondary">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

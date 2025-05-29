@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - MedScanner{% endblock %}
+
+{% block page_id %}profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-user-circle me-2"></i>User Profile
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-4 mb-md-0">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-user-circle fa-5x text-primary"></i>
+                                </div>
+                                <h4>{{ user.full_name }}</h4>
+                                <p class="text-muted mb-1">@{{ user.username }}</p>
+                                <p class="mb-3">
+                                    {% for role in user.roles %}
+                                        <span class="badge role-badge role-{{ role.name }}">{{ role.name|capitalize }}</span>
+                                    {% endfor %}
+                                </p>
+                                <p class="text-muted">
+                                    <i class="fas fa-envelope me-2"></i>{{ user.email }}
+                                </p>
+                                <p class="text-muted">
+                                    <i class="fas fa-calendar me-2"></i>Member since {{ user.created_at.strftime('%B %d, %Y') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <ul class="nav nav-tabs card-header-tabs" id="profile-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="edit-tab" data-bs-toggle="tab" data-bs-target="#edit-pane" 
+                                                type="button" role="tab" aria-controls="edit-pane" aria-selected="true">
+                                            Edit Profile
+                                        </button>
+                                    </li>
+                                    {% if user.has_role('patient') %}
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="medical-tab" data-bs-toggle="tab" data-bs-target="#medical-pane" 
+                                                type="button" role="tab" aria-controls="medical-pane" aria-selected="false">
+                                            Medical Information
+                                        </button>
+                                    </li>
+                                    {% endif %}
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-pane" 
+                                                type="button" role="tab" aria-controls="security-pane" aria-selected="false">
+                                            Security
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <div class="tab-content" id="profile-tab-content">
+                                    <!-- Edit Profile Tab -->
+                                    <div class="tab-pane fade show active" id="edit-pane" role="tabpanel" aria-labelledby="edit-tab">
+                                        <form method="post" action="{{ url_for('profile') }}" class="needs-validation" novalidate>
+                                            <div class="mb-3">
+                                                <label for="full_name" class="form-label">Full Name</label>
+                                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                                       value="{{ user.full_name }}" required>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="email" class="form-label">Email Address</label>
+                                                <input type="email" class="form-control" id="email" name="email" 
+                                                       value="{{ user.email }}" required>
+                                            </div>
+                                            
+                                            {% if user.has_role('patient') %}
+                                            <h5 class="mt-4">Patient Information</h5>
+                                            <hr>
+                                            
+                                            <div class="mb-3">
+                                                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                                                       value="{{ user.date_of_birth.strftime('%Y-%m-%d') if user.date_of_birth }}">
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="weight" class="form-label">Weight (kg)</label>
+                                                    <input type="number" step="0.1" min="0" class="form-control" id="weight" name="weight" 
+                                                           value="{{ user.weight if user.weight }}">
+                                                </div>
+                                                
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="height" class="form-label">Height (cm)</label>
+                                                    <input type="number" step="0.1" min="0" class="form-control" id="height" name="height" 
+                                                           value="{{ user.height if user.height }}">
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <div class="d-grid mt-4">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-save me-2"></i>Save Changes
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    
+                                    {% if user.has_role('patient') %}
+                                    <!-- Medical Information Tab -->
+                                    <div class="tab-pane fade" id="medical-pane" role="tabpanel" aria-labelledby="medical-tab">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h5>Allergies</h5>
+                                                
+                                                {% if allergies %}
+                                                <div class="list-group mb-3">
+                                                    {% for allergy in allergies %}
+                                                    <div class="list-group-item">
+                                                        <div class="d-flex w-100 justify-content-between">
+                                                            <h6 class="mb-1">{{ allergy.allergen }}</h6>
+                                                            <span class="badge severity-{{ allergy.severity }}">{{ allergy.severity }}</span>
+                                                        </div>
+                                                        {% if allergy.reaction %}
+                                                        <p class="mb-1">Reaction: {{ allergy.reaction }}</p>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                                {% else %}
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>No allergies recorded
+                                                </div>
+                                                {% endif %}
+                                                
+                                                <button class="btn btn-sm btn-outline-primary mb-4" disabled>
+                                                    <i class="fas fa-plus me-1"></i>Add Allergy
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <h5>Medical History</h5>
+                                                
+                                                {% if medical_history %}
+                                                <div class="list-group mb-3">
+                                                    {% for condition in medical_history %}
+                                                    <div class="list-group-item">
+                                                        <div class="d-flex w-100 justify-content-between">
+                                                            <h6 class="mb-1">{{ condition.condition }}</h6>
+                                                            <span class="badge bg-info">{{ condition.status }}</span>
+                                                        </div>
+                                                        {% if condition.diagnosed_date %}
+                                                        <p class="mb-1">Diagnosed: {{ condition.diagnosed_date.strftime('%B %d, %Y') }}</p>
+                                                        {% endif %}
+                                                        {% if condition.notes %}
+                                                        <p class="mb-1">Notes: {{ condition.notes }}</p>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                                {% else %}
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>No medical history recorded
+                                                </div>
+                                                {% endif %}
+                                                
+                                                <button class="btn btn-sm btn-outline-primary mb-4" disabled>
+                                                    <i class="fas fa-plus me-1"></i>Add Condition
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="alert alert-info mt-3">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Note:</strong> Medical information is used to detect potential drug interactions and safety issues.
+                                            Please keep this information up to date for accurate results. Contact your healthcare provider to update
+                                            medical records.
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Security Tab -->
+                                    <div class="tab-pane fade" id="security-pane" role="tabpanel" aria-labelledby="security-tab">
+                                        <div class="alert alert-info mb-4">
+                                            <i class="fas fa-info-circle me-2"></i>Password change functionality is currently unavailable. Please contact support if you need to reset your password.
+                                        </div>
+                                        
+                                        <h5>Security Recommendations</h5>
+                                        <ul class="list-group mb-4">
+                                            <li class="list-group-item">Use a strong, unique password</li>
+                                            <li class="list-group-item">Enable two-factor authentication when available</li>
+                                            <li class="list-group-item">Don't share your account credentials</li>
+                                            <li class="list-group-item">Log out when using shared devices</li>
+                                            <li class="list-group-item">Regularly review your account activity</li>
+                                        </ul>
+                                        
+                                        <div class="d-grid">
+                                            <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

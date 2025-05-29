@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Check Drug Interactions - MedScanner{% endblock %}
+
+{% block page_id %}public-interactions{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 card-title mb-0">Check Drug Interactions</h1>
+                </div>
+                <div class="card-body">
+                    <p class="lead">
+                        Use this tool to check for potential interactions between medications. 
+                        Select medications from the list or search by name.
+                    </p>
+                    
+                    {% if scanned_medications %}
+                    <div class="alert alert-info mb-4">
+                        <h5><i class="fas fa-camera me-2"></i>Medications from your scan</h5>
+                        <p>These medications were detected in your prescription scan:</p>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            {% for med in scanned_medications %}
+                                <span class="badge bg-primary p-2">{{ med.name }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ url_for('public_interactions', clear_scan=1) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Clear scanned medications
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{{ url_for('public_interactions') }}" class="needs-validation" novalidate>
+                        <div class="row mb-3">
+                            <div class="col-md-8 mb-3">
+                                <div id="selected-meds" class="d-flex flex-wrap gap-2 mb-2">
+                                    <!-- Selected medications will be displayed here -->
+                                    {% if scanned_medications %}
+                                        {% for med in scanned_medications %}
+                                            {% if med.id %}
+                                                <input type="hidden" name="medication_id" value="{{ med.id }}">
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="medication-search" class="form-control" placeholder="Start typing medication name...">
+                                    <button type="button" id="add-medication-btn" class="btn btn-outline-secondary">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                </div>
+                                <div id="medication-results" class="dropdown-menu w-100">
+                                    <!-- Search results will appear here -->
+                                </div>
+                                <div id="selected-medications-container">
+                                    <!-- Hidden inputs for selected medications will be added here -->
+                                </div>
+                                
+                                {% if all_medications %}
+                                <div class="mt-3">
+                                    <label for="medication-select" class="form-label">Or select from common medications:</label>
+                                    <select class="form-select" id="medication-select">
+                                        <option selected disabled>Choose a medication...</option>
+                                        {% for med in all_medications %}
+                                            <option value="{{ med.id }}" data-name="{{ med.name }}" 
+                                                    data-generic="{{ med.generic_name }}" data-strength="{{ med.strength }}">
+                                                {{ med.name }}{% if med.strength %} - {{ med.strength }}{% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-2"></i>Check Interactions
+                                </button>
+                                
+                                <div class="mt-3">
+                                    <a href="{{ url_for('scan_page') }}" class="btn btn-outline-success w-100">
+                                        <i class="fas fa-camera me-2"></i>Scan a Prescription
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    {% if results %}
+                    <div class="alert {% if results.interactions|length > 0 %}alert-warning{% else %}alert-success{% endif %} mt-4">
+                        <h4 class="alert-heading">
+                            {% if results.interactions|length > 0 %}
+                                <i class="fas fa-exclamation-triangle me-2"></i>Potential Interactions Found
+                            {% else %}
+                                <i class="fas fa-check-circle me-2"></i>No Interactions Found
+                            {% endif %}
+                        </h4>
+                        <p>
+                            {% if results.interactions|length > 0 %}
+                                We found {{ results.interactions|length }} potential interaction(s) between the selected medications.
+                            {% else %}
+                                No potential interactions were found between the selected medications.
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    {% if results.interactions|length > 0 %}
+                    <div class="table-responsive mt-4">
+                        <table class="table table-striped table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Medications</th>
+                                    <th>Severity</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for interaction in results.interactions %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ interaction.drug1.name }}</span>
+                                        <i class="fas fa-exchange-alt mx-2"></i>
+                                        <span class="badge bg-primary">{{ interaction.drug2.name }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if interaction.severity == 'severe' %}bg-danger{% elif interaction.severity == 'moderate' %}bg-warning{% else %}bg-info{% endif %}">
+                                            {{ interaction.severity|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>{{ interaction.description }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-info mt-4">
+                        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Important Note:</h5>
+                        <p>
+                            This information is provided for educational purposes only and is not a substitute for 
+                            professional medical advice. Always consult with your healthcare provider before making 
+                            any changes to your medication regimen.
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Common Drug Interactions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Medications</th>
+                                    <th>Severity</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for interaction in common_interactions %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ interaction.drug1.name }}</span>
+                                        <i class="fas fa-exchange-alt mx-2"></i>
+                                        <span class="badge bg-primary">{{ interaction.drug2.name }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if interaction.severity == 'severe' %}bg-danger{% elif interaction.severity == 'moderate' %}bg-warning{% else %}bg-info{% endif %}">
+                                            {{ interaction.severity|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>{{ interaction.description }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Create an Account for More Features</h3>
+                </div>
+                <div class="card-body">
+                    <p>Sign up for a free account to access more features:</p>
+                    <ul>
+                        <li>Save your medication list</li>
+                        <li>Scan prescriptions using your camera</li>
+                        <li>Receive alerts for new interactions</li>
+                        <li>Track medication history</li>
+                    </ul>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i>Create Free Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const medicationSearch = document.getElementById('medication-search');
+        const medicationResults = document.getElementById('medication-results');
+        const selectedMeds = document.getElementById('selected-meds');
+        const addMedicationBtn = document.getElementById('add-medication-btn');
+        const selectedMedicationsContainer = document.getElementById('selected-medications-container');
+        
+        let selectedMedications = [];
+        let searchTimeout;
+        
+        // Function to search medications
+        function searchMedications(query) {
+            if (query.length < 2) {
+                medicationResults.innerHTML = '';
+                medicationResults.classList.remove('show');
+                return;
+            }
+            
+            // Clear previous timeout
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            // Set new timeout for search
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/medications?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        medicationResults.innerHTML = '';
+                        
+                        if (data.length === 0) {
+                            medicationResults.innerHTML = '<div class="dropdown-item">No medications found</div>';
+                        } else {
+                            data.forEach(med => {
+                                // Skip if already selected
+                                if (selectedMedications.some(m => m.id === med.id)) {
+                                    return;
+                                }
+                                
+                                const item = document.createElement('a');
+                                item.classList.add('dropdown-item');
+                                item.href = '#';
+                                item.textContent = med.name;
+                                if (med.generic_name) {
+                                    item.textContent += ` (${med.generic_name})`;
+                                }
+                                if (med.strength) {
+                                    item.textContent += ` - ${med.strength}`;
+                                }
+                                
+                                item.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    addMedicationToSelection(med);
+                                    medicationSearch.value = '';
+                                    medicationResults.classList.remove('show');
+                                });
+                                
+                                medicationResults.appendChild(item);
+                            });
+                        }
+                        
+                        medicationResults.classList.add('show');
+                    })
+                    .catch(error => console.error('Error searching medications:', error));
+            }, 300);
+        }
+        
+        // Function to add medication to selection
+        function addMedicationToSelection(medication) {
+            if (selectedMedications.some(m => m.id === medication.id)) {
+                return;
+            }
+            
+            selectedMedications.push(medication);
+            
+            // Create badge for selected medication
+            const badge = document.createElement('div');
+            badge.classList.add('badge', 'bg-primary', 'p-2', 'me-2', 'mb-2');
+            badge.innerHTML = `
+                ${medication.name}
+                <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove"></button>
+            `;
+            
+            // Add hidden input
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'medication_id';
+            input.value = medication.id;
+            selectedMedicationsContainer.appendChild(input);
+            
+            // Add remove functionality
+            badge.querySelector('.btn-close').addEventListener('click', function() {
+                badge.remove();
+                selectedMedications = selectedMedications.filter(m => m.id !== medication.id);
+                selectedMedicationsContainer.querySelector(`input[value="${medication.id}"]`).remove();
+            });
+            
+            selectedMeds.appendChild(badge);
+        }
+        
+        // Initialize with scanned medications
+        {% if scanned_medications %}
+            {% for med in scanned_medications %}
+                {% if med.id %}
+                    addMedicationToSelection({
+                        id: "{{ med.id }}",
+                        name: "{{ med.name }}",
+                        generic_name: "",
+                        strength: ""
+                    });
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        // Handle dropdown selection
+        const medicationSelect = document.getElementById('medication-select');
+        if (medicationSelect) {
+            medicationSelect.addEventListener('change', function() {
+                const option = this.options[this.selectedIndex];
+                const medData = {
+                    id: option.value,
+                    name: option.getAttribute('data-name'),
+                    generic_name: option.getAttribute('data-generic'),
+                    strength: option.getAttribute('data-strength')
+                };
+                
+                addMedicationToSelection(medData);
+                this.selectedIndex = 0; // Reset to default option
+            });
+        }
+        
+        // Event listeners
+        medicationSearch.addEventListener('input', function() {
+            searchMedications(this.value);
+        });
+        
+        medicationSearch.addEventListener('focus', function() {
+            if (this.value.length >= 2) {
+                medicationResults.classList.add('show');
+            }
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!medicationSearch.contains(e.target) && !medicationResults.contains(e.target) && !addMedicationBtn.contains(e.target)) {
+                medicationResults.classList.remove('show');
+            }
+        });
+        
+        addMedicationBtn.addEventListener('click', function() {
+            if (medicationSearch.value.length >= 2) {
+                searchMedications(medicationSearch.value);
+                medicationResults.classList.add('show');
+            }
+        });
+    });
+</script>
+{% endblock %}

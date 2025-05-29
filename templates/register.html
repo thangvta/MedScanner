@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Register - MedScanner{% endblock %}
+
+{% block page_id %}register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-plus fa-3x text-primary"></i>
+                    <h1 class="h3 mt-2">Create an Account</h1>
+                    <p class="text-muted">Register to use MedScanner's features</p>
+                </div>
+                
+                <form method="post" action="{{ url_for('register') }}" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               placeholder="Choose a username" required>
+                        <div class="invalid-feedback">
+                            Please choose a username.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               placeholder="Enter your email" required>
+                        <div class="invalid-feedback">
+                            Please enter a valid email address.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" 
+                               placeholder="Enter your full name" required>
+                        <div class="invalid-feedback">
+                            Please enter your full name.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Account Type</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="" selected disabled>Select your role</option>
+                            {% for role in roles %}
+                            <option value="{{ role.name }}">{{ role.name|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select your account type.
+                        </div>
+                        <small class="form-text text-muted">
+                            This determines what features you can access in the app.
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="Choose a password" required minlength="8">
+                        <div class="invalid-feedback">
+                            Password must be at least 8 characters long.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                               placeholder="Confirm your password" required>
+                        <div class="invalid-feedback">
+                            Passwords must match.
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card-footer bg-light text-center py-3">
+                <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}">Log In</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-7 d-none d-md-block">
+        <img src="https://pixabay.com/get/gc3f410771d0cfae80380597ebf90585c7beefc38f488a81a9102dba5fe46bbfc2c379383d4f1695442787f7c413542b842ae9df284c6fb281e14d6822c85067f_1280.jpg" class="img-fluid rounded shadow" alt="Healthcare professional">
+        
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-user-shield me-2"></i>Account Types & Features
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white text-center">
+                                <i class="fas fa-user me-2"></i>Patient
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Scan prescriptions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Check interactions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Store medical history</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Receive alerts</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Track medications</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white text-center">
+                                <i class="fas fa-user-md me-2"></i>Doctor
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Create prescriptions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Verify dosages</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Check interactions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Access patient history</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Generate reports</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white text-center">
+                                <i class="fas fa-mortar-pestle me-2"></i>Pharmacist
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Verify prescriptions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Check interactions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Manage inventory</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Track medications</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Generate reports</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    // Check if passwords match
+    function validatePassword() {
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity("Passwords don't match");
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+    }
+    
+    // Add event listeners for validation
+    password.addEventListener('change', validatePassword);
+    confirmPassword.addEventListener('keyup', validatePassword);
+});
+</script>
+{% endblock %}
